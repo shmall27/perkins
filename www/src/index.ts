@@ -133,6 +133,12 @@ async function embedAllFlatlands() {
   }
 }
 
+async function visualizeEmbeddings() {
+  const db = await new Db();
+  const embeddings = await db.visualize_embeddings();
+  console.log(embeddings);
+}
+
 function restoreOpenaiApiKey() {
   console.log('restoring openai api key');
   const openaiApiKey = localStorage.getItem('openaiApiKey');
@@ -159,3 +165,4 @@ async function clearDatabase() {
 (window as any).handleSearch = handleSearch;
 (window as any).clearDatabase = clearDatabase;
 (window as any).embedAllFlatlands = embedAllFlatlands;
+(window as any).visualizeEmbeddings = visualizeEmbeddings;

@@ -153,10 +153,10 @@ impl<D: DirectoryHandle> Victor<D> {
 
     // utils
 
-    async fn project_embeddings(&mut self) {
+    pub async fn project_embeddings(&mut self) {
         let prev_embeddings = self.get_all_embeddings().await;
 
-        let (eigenvectors, means) = project_to_lower_dimension(prev_embeddings.clone(), 500);
+        let (eigenvectors, means) = project_to_lower_dimension(prev_embeddings.clone(), 3);
         let vector_projection = VectorProjection {
             eigen: eigenvectors.clone(),
             means,
@@ -260,7 +260,7 @@ impl<D: DirectoryHandle> Victor<D> {
         writable.close().await.unwrap();
     }
 
-    async fn get_all_embeddings(&self) -> Vec<Embedding> {
+    pub async fn get_all_embeddings(&self) -> Vec<Embedding> {
         let file_handles = Index::get_matching_db_files(
             &self.root,
             Vec::new().into_iter().collect::<BTreeSet<_>>(),
@@ -388,10 +388,6 @@ impl<D: DirectoryHandle> Victor<D> {
 
         writable.write_at_cursor_pos(embedding_serialized).await?;
         writable.close().await?;
-
-        if file_handle.size().await? > 1000000 && !is_projected {
-            self.project_embeddings().await;
-        }
 
         Ok(())
     }

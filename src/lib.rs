@@ -128,4 +128,14 @@ impl Db {
             console_warn!("Failed to clear victor data: {:?}", result);
         }
     }
+
+    pub async fn visualize_embeddings(&mut self) -> JsValue {
+        utils::set_panic_hook();
+
+        self.victor.project_embeddings().await;
+
+        let embeddings = self.victor.get_all_embeddings().await;
+
+        serde_wasm_bindgen::to_value(&embeddings).unwrap()
+    }
 }
