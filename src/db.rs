@@ -149,7 +149,7 @@ impl<D: DirectoryHandle> Victor<D> {
 
     // utils
 
-    pub async fn project_embeddings(&mut self) {
+    pub async fn project_embeddings(&mut self) -> Vec<Embedding> {
         let prev_embeddings = self.get_all_embeddings().await;
 
         let (eigenvectors, means) = project_to_lower_dimension(prev_embeddings.clone(), 3);
@@ -160,7 +160,33 @@ impl<D: DirectoryHandle> Victor<D> {
 
         self.write_projection(vector_projection.clone()).await;
 
-        self.update_all_embeddings(vector_projection).await;
+        let matrix = embeddings_to_dmatrix(
+            prev_embeddings
+                .clone()
+                .into_iter()
+                .map(|embedding| embedding.vector)
+                .collect(),
+        );
+
+        let (centered_data, _) = center_data(&matrix);
+
+        let projected_data = centered_data * &vector_projection.eigen;
+
+        let projected_vectors: Vec<Vec<f32>> = projected_data
+            .row_iter()
+            .map(|row| row.iter().cloned().collect())
+            .collect();
+
+        let new_embeddings: Vec<Embedding> = prev_embeddings
+            .iter()
+            .enumerate()
+            .map(|(index, embedding)| Embedding {
+                id: embedding.id,
+                vector: projected_vectors[index].clone(),
+            })
+            .collect();
+
+        new_embeddings
     }
 
     async fn update_all_embeddings(&mut self, vector_projection: VectorProjection) {
@@ -308,7 +334,7 @@ impl<D: DirectoryHandle> Victor<D> {
         bincode::deserialize::<u32>(embedding_size_bytes).expect("Failed to deserialize header")
     }
 
-    async fn project_single_vector(&self, vector: Vec<f32>) -> Vec<f32> {
+    pub async fn project_single_vector(&self, vector: Vec<f32>) -> Vec<f32> {
         let eigen_file_handle = self
             .root
             .get_file_handle_with_options("eigen.bin", &GetFileHandleOptions { create: true })

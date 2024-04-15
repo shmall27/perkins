@@ -129,13 +129,22 @@ impl Db {
         }
     }
 
-    pub async fn visualize_embeddings(&mut self) -> JsValue {
+    pub async fn project_all_embeddings(&mut self) -> JsValue {
         utils::set_panic_hook();
 
-        self.victor.project_embeddings().await;
-
-        let embeddings = self.victor.get_all_embeddings().await;
+        let embeddings = self.victor.project_embeddings().await;
 
         serde_wasm_bindgen::to_value(&embeddings).unwrap()
+    }
+
+    pub async fn project_single_embedding(&mut self, vector: &[f64]) -> JsValue {
+        utils::set_panic_hook();
+
+        let projected_vector = self
+            .victor
+            .project_single_vector(vector.iter().map(|x| *x as f32).collect())
+            .await;
+
+        serde_wasm_bindgen::to_value(&projected_vector).unwrap()
     }
 }
