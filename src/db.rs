@@ -96,16 +96,6 @@ impl<D: DirectoryHandle> Victor<D> {
             .await
             .unwrap();
 
-        let is_projected: bool = self
-            .root
-            .get_file_handle_with_options("eigen.bin", &GetFileHandleOptions { create: false })
-            .await
-            .is_ok();
-
-        if is_projected {
-            vector = self.project_single_vector(vector).await;
-        }
-
         let mut nearest_neighbors = BinaryHeap::with_capacity(top_n);
         for file_handle in file_handles {
             let file = file_handle.read().await.unwrap();
@@ -113,11 +103,7 @@ impl<D: DirectoryHandle> Victor<D> {
 
             // find max similarity in this file
             for potential_match in &embeddings {
-                let sim = if is_projected {
-                    similarity::euclidean(&potential_match.vector, &vector).unwrap()
-                } else {
-                    similarity::cosine(&potential_match.vector, &vector).unwrap()
-                };
+                let sim = similarity::euclidean(&potential_match.vector, &vector).unwrap();
 
                 if nearest_neighbors.len() < top_n {
                     let result = NearestNeighborsResult {
@@ -360,24 +346,10 @@ impl<D: DirectoryHandle> Victor<D> {
 
     async fn write_embedding(
         &mut self,
-        mut embedding: Embedding,
+        embedding: Embedding,
         tags: Vec<String>,
     ) -> Result<(), D::Error> {
         let mut file_handle = Index::get_exact_db_file(&mut self.root, tags).await?;
-
-        let is_projected: bool = self
-            .root
-            .get_file_handle_with_options("eigen.bin", &GetFileHandleOptions { create: false })
-            .await
-            .is_ok();
-
-        if is_projected {
-            let vector = self.project_single_vector(embedding.vector.clone()).await;
-            embedding = Embedding {
-                id: embedding.id,
-                vector,
-            };
-        }
 
         let mut writable = file_handle
             .create_writable_with_options(&CreateWritableOptions {

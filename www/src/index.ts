@@ -135,8 +135,19 @@ async function embedAllFlatlands() {
 
 async function visualizeEmbeddings() {
   const db = await new Db();
-  const embeddings = await db.visualize_embeddings();
+  const embeddings = await db.project_all_embeddings();
   console.log(embeddings);
+}
+
+async function projectSingleEmbedding() {
+  const db = await new Db();
+  const randomEmbedding = flatland.embeddings[
+    Math.floor(Math.random() * flatland.embeddings.length)
+  ] as number[];
+  const projectedEmbedding = await db.project_single_embedding(
+    new Float64Array(randomEmbedding),
+  );
+  console.log(projectedEmbedding);
 }
 
 function restoreOpenaiApiKey() {
@@ -166,3 +177,4 @@ async function clearDatabase() {
 (window as any).clearDatabase = clearDatabase;
 (window as any).embedAllFlatlands = embedAllFlatlands;
 (window as any).visualizeEmbeddings = visualizeEmbeddings;
+(window as any).projectSingleEmbedding = projectSingleEmbedding;
